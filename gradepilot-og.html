@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradePilot — Multi-Model AI Grading Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --dark:      #06302c;
+    --dark-2:    #0a3d38;
+    --teal-900:  #042f2e;
+    --teal-700:  #0f766e;
+    --teal-600:  #14b8a6;
+    --teal-500:  #2dd4bf;
+    --teal-100:  #ccfbf1;
+    --teal-50:   #eefaf8;
+    --cream:     #fdf1e7;
+    --cream-line:#f0dcc7;
+    --ink:       #12302c;
+    --ink-soft:  #55716c;
+    --paper:     #f6f7f5;
+    --card:      #ffffff;
+    --line:      #dfe6e3;
+    --amber-700: #b45309;
+    --amber-100: #fef3c7;
+    --amber-50:  #fffbeb;
+    --red-700:   #b3261e;
+    --red-100:   #fde3e1;
+    --red-50:    #fef4f3;
+    --radius:    10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .serif { font-family: 'Playfair Display', serif; }
+  h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 800; }
+
+  header.top { background: var(--dark); color: #eafffb; padding: 20px 28px; }
+  .header-inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand img { height: 42px; width: auto; border-radius: 9px; display: block; }
+  .brand .word { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 800; }
+  .brand .word .g { color: #ffffff; }
+  .brand .word .p { color: var(--teal-500); }
+  .brand .tag { font-size: 12.5px; color: #9fd8cf; margin-top: 1px; }
+
+  nav.tabs { display: flex; gap: 6px; background: rgba(255,255,255,0.06); padding: 4px; border-radius: 10px; }
+  nav.tabs button { font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 7px; border: none; background: transparent; color: #bfe9e2; cursor: pointer; }
+  nav.tabs button.active { background: var(--teal-600); color: #042f2e; font-weight: 600; }
+  nav.tabs button:hover:not(.active) { background: rgba(255,255,255,0.08); }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }
+  .tabpanel { display: none; }
+  .tabpanel.active { display: block; }
+
+  .grid-2 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .panel h2 { font-size: 16px; font-weight: 800; color: var(--teal-900); margin-bottom: 4px; }
+  .panel .sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 16px; }
+  label { font-size: 13px; font-weight: 500; color: var(--ink); display: block; margin-bottom: 6px; }
+  .hint { font-size: 12px; color: var(--ink-soft); margin-top: 6px; line-height: 1.5; }
+  .field-gap { margin-bottom: 18px; }
+
+  input[type="number"], input[type="text"], textarea, select {
+    width: 100%; padding: 9px 11px; font-size: 14.5px; font-family: 'IBM Plex Sans', sans-serif;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+  }
+  textarea { font-family: 'IBM Plex Sans', sans-serif; resize: vertical; min-height: 64px; }
+  input[type="number"] { font-family: 'IBM Plex Mono', monospace; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--teal-600); outline-offset: 1px; border-color: var(--teal-600); }
+
+  input[type="range"] { width: 100%; accent-color: var(--teal-600); margin: 8px 0 2px; }
+  .slider-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-soft); }
+  .slider-value { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; color: var(--teal-700); }
+
+  .policy { margin-top: 14px; padding: 12px; background: var(--teal-50); border-radius: 8px; font-size: 12.5px; color: var(--teal-900); line-height: 1.55; }
+
+  button { font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; font-weight: 600; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--teal-700); background: var(--teal-700); color: #fff; cursor: pointer; }
+  button:hover { background: var(--teal-600); border-color: var(--teal-600); }
+  button.secondary { background: #fff; color: var(--teal-700); }
+  button.secondary:hover { background: var(--teal-50); }
+  button.ghost { background: transparent; border-color: var(--line); color: var(--ink-soft); font-weight: 500; }
+  button.ghost:hover { background: var(--paper); }
+  button:disabled { background: #e3e8e6; border-color: #e3e8e6; color: #9aa8a4; cursor: not-allowed; }
+  button:focus-visible { outline: 2px solid var(--teal-900); outline-offset: 2px; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .qrow { display: grid; grid-template-columns: 1fr 100px 34px; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .qrow .rm { background: transparent; border: 1px solid var(--line); color: var(--red-700); width: 34px; height: 36px; padding: 0; font-weight: 700; border-radius: 8px; }
+  .qrow .rm:hover { background: var(--red-50); }
+  .qtotal { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chip { display: flex; align-items: center; gap: 6px; background: var(--teal-50); color: var(--teal-900); border: 1px solid var(--teal-100); padding: 6px 8px 6px 12px; border-radius: 999px; font-size: 13px; }
+  .chip button { padding: 0; width: 16px; height: 16px; border-radius: 50%; font-size: 11px; line-height: 1; background: var(--teal-600); border: none; }
+  .add-row { display: flex; gap: 8px; }
+  .add-row input { flex: 1; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .stat .n { font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; color: var(--teal-700); }
+  .stat .l { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 600; }
+  td.num { font-family: 'IBM Plex Mono', monospace; }
+  .empty { text-align: center; color: var(--ink-soft); font-size: 13px; padding: 26px 0; }
+
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .pill.gray  { background: #eef1f0; color: var(--ink-soft); }
+  .pill.ok    { background: var(--teal-100); color: var(--teal-900); }
+  .pill.warn  { background: var(--amber-100); color: var(--amber-700); }
+  .pill.ready { background: #dbeafe; color: #1d4ed8; }
+  .pill.sent  { background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100); }
+
+  .row-actions { display: flex; gap: 8px; }
+  .row-actions button { padding: 6px 12px; font-size: 12.5px; }
+
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(6, 48, 44, 0.55); align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; z-index: 50; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--paper); border-radius: 14px; max-width: 860px; width: 100%; padding: 0; overflow: hidden; border: 1px solid var(--line); }
+  .modal-head { background: var(--dark); color: #eafffb; padding: 18px 24px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .modal-head h2 { color: #fff; font-size: 19px; margin-bottom: 2px; }
+  .modal-head .meta { font-size: 12.5px; color: #9fd8cf; }
+  .modal-head button { background: rgba(255,255,255,0.12); border: none; color: #fff; width: 30px; height: 30px; border-radius: 8px; padding: 0; font-size: 15px; }
+  .modal-head button:hover { background: rgba(255,255,255,0.22); }
+  .modal-body { padding: 22px 24px 26px; max-height: 74vh; overflow-y: auto; }
+
+  .qdetail-table td, .qdetail-table th { padding: 8px 10px; font-size: 13px; }
+  .score-chip { display: inline-block; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; margin-right: 4px; }
+
+  .flag-card { border: 1px solid var(--amber-700); background: var(--amber-50); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+  .flag-card.resolved { border-color: var(--teal-600); background: var(--teal-50); }
+  .flag-card h4 { font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .flag-card .scores-line { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
+  .flag-card .resolve-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px; }
+  .flag-card .resolve-row > div:first-child { flex: 0 0 110px; }
+  .flag-card .resolve-row > div:nth-child(2) { flex: 1; min-width: 200px; }
+  .flag-card .resolved-note { font-size: 12.5px; color: var(--teal-900); background: #fff; border: 1px solid var(--teal-100); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+
+  .progress-line { display: flex; align-items: center; gap: 10px; margin: 16px 0; font-size: 13px; color: var(--ink-soft); }
+  .progress-bar { flex: 1; height: 8px; background: #e6ece9; border-radius: 4px; overflow: hidden; }
+  .progress-bar > div { height: 100%; background: var(--teal-600); }
+  .gate-note { font-size: 12.5px; color: var(--amber-700); margin-top: 4px; }
+
+  .report-total { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 18px; }
+  .report-total .big { font-family: 'IBM Plex Mono', monospace; font-size: 34px; font-weight: 600; color: var(--teal-700); }
+  .report-total .of { font-size: 14px; color: var(--ink-soft); }
+  .explain-block { font-size: 12.5px; background: var(--teal-50); border: 1px solid var(--teal-100); border-radius: 8px; padding: 8px 10px; margin-top: 6px; color: var(--teal-900); }
+
+  .table-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--dark); color: #eafffb; padding: 10px 18px; border-radius: 8px; font-size: 13.5px; display: none; z-index: 60; }
+  .toast.show { display: block; }
+
+  .search-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+  .search-row input[type="text"] { max-width: 260px; }
+  .search-row select { max-width: 180px; }
+
+  .filebox { border: 1px dashed var(--line); border-radius: 8px; padding: 12px; background: var(--paper); font-size: 12.5px; color: var(--ink-soft); }
+  .filebox.has-file { border-style: solid; border-color: var(--teal-600); background: var(--teal-50); color: var(--teal-900); }
+  input[type="file"] { font-size: 12.5px; }
+  .attach-status { font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
+
+  .override-picker { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 6px; }
+  .override-picker select { flex: 1; min-width: 200px; }
+
+  .session-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+  .session-bar .spacer { flex: 1; }
+  .session-bar .hint { margin: 0; }
+  #loadSessionInput { display: none; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="header-inner">
+    <div class="brand">
+      <img src="gradepilot-logo.png" alt="GradePilot logo">
+      <div>
+        <div class="word"><span class="g">Grade</span><span class="p">Pilot</span></div>
+        <div class="tag">Multi-Model AI Grading Controller</div>
+      </div>
+    </div>
+    <nav class="tabs" id="tabNav">
+      <button data-tab="setup" class="active">Class setup</button>
+      <button data-tab="queue">Grading queue</button>
+      <button data-tab="reports">Reports</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="session-bar">
+    <button class="secondary" id="saveSessionBtn" type="button">💾 Save session to file</button>
+    <button class="secondary" id="loadSessionBtn" type="button">📂 Load session from file</button>
+    <input type="file" id="loadSessionInput" accept="application/json">
+    <button class="ghost" id="newExamBtn" type="button">Start new exam</button>
+    <span class="spacer"></span>
+    <span class="hint" id="sessionHint">Nothing saved yet — your work only lives in this browser tab until you save it.</span>
+  </div>
+
+  <!-- ============ TAB 1: CLASS SETUP ============ -->
+  <section class="tabpanel active" id="tab-setup">
+    <div class="grid-2">
+      <div class="panel">
+        <h2>Exam &amp; consensus settings</h2>
+        <p class="sub">These settings apply to the whole class at once — every student is graded against the same rubric and the same variance rule.</p>
+
+        <div class="field-gap">
+          <label for="examName">Exam name</label>
+          <input type="text" id="examName" value="AP Chemistry — Unit 4 Test">
+        </div>
+
+        <div class="field-gap">
+          <label for="threshold">Allowed variance per question (%)</label>
+          <input type="range" id="threshold" min="1" max="20" step="0.5" value="5">
+          <div class="slider-row"><span>1% strict</span><span class="slider-value" id="thresholdVal">5.0%</span><span>20% lenient</span></div>
+          <p class="hint">Each question is checked on its own. Lower percentages catch more disagreement per question and send more items to review; higher percentages let more of the exam auto-grade.</p>
+        </div>
+
+        <div class="policy" id="policyText"></div>
+      </div>
+
+      <div class="panel">
+        <h2 id="qpanelTitle">Question paper</h2>
+        <p class="sub">Add every question with its max point value. Once an exam is created, questions are locked — start a new exam to change them.</p>
+        <div id="qbuilder"></div>
+        <div class="btn-row" style="margin-top:8px;" id="addQRow">
+          <button class="secondary" id="addQBtn" type="button">+ Add question</button>
+        </div>
+        <p class="qtotal" id="qtotalLine"></p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Class roster</h2>
+      <p class="sub">Pilot roster — add or remove students before applying settings.</p>
+      <div class="chips" id="rosterChips"></div>
+      <div class="add-row">
+        <input type="text" id="newStudentName" placeholder="Student name">
+        <button class="secondary" id="addStudentBtn" type="button">Add student</button>
+      </div>
+      <div class="field-gap" style="margin-top:14px;">
+        <label for="bulkRoster">Or paste a class list (one name per line)</label>
+        <textarea id="bulkRoster" placeholder="Ava Thompson&#10;Marcus Lee&#10;Priya Nair"></textarea>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="secondary" id="bulkAddBtn" type="button">Add all</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button id="applyBtn">Apply settings &amp; open grading queue</button>
+      <span class="hint" id="applyHint"></span>
+    </div>
+  </section>
+
+  <!-- ============ TAB 2: GRADING QUEUE ============ -->
+  <section class="tabpanel" id="tab-queue">
+    <div class="stats" id="statBar"></div>
+
+    <div class="panel">
+      <div class="table-head">
+        <div>
+          <h2 style="margin-bottom:2px;" id="queueExamName">Exam</h2>
+          <p class="sub" style="margin-bottom:0;" id="queuePolicyLine"></p>
+        </div>
+        <div class="btn-row">
+          <button class="secondary" id="gradeAllBtn" type="button">Run 4-model grading — all pending</button>
+          <button class="secondary" id="sendAllReadyBtn" type="button">Send all ready reports</button>
+        </div>
+      </div>
+      <div class="search-row">
+        <input type="text" id="queueSearch" placeholder="Search students…">
+        <select id="queueFilter">
+          <option value="all">All statuses</option>
+          <option value="pending">Not graded</option>
+          <option value="review">Needs review</option>
+          <option value="ready">Ready to send</option>
+          <option value="sent">Report sent</option>
+        </select>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Student</th><th>Answer sheet</th><th>Status</th><th>Flagged questions</th><th>Total</th><th></th></tr>
+        </thead>
+        <tbody id="queueBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ TAB 3: REPORTS ============ -->
+  <section class="tabpanel" id="tab-reports">
+    <div class="panel">
+      <div class="table-head">
+        <div>
+          <h2 style="margin-bottom:2px;">Reports</h2>
+          <p class="sub" style="margin-bottom:0;">A student's report only becomes available once every flagged question on their paper has been reviewed.</p>
+        </div>
+        <button class="secondary" id="exportBtn" type="button">Download class summary CSV</button>
+      </div>
+      <div class="search-row">
+        <input type="text" id="reportsSearch" placeholder="Search students…">
+      </div>
+      <table>
+        <thead><tr><th>Student</th><th>Total</th><th>%</th><th>Status</th><th>Sent</th><th></th></tr></thead>
+        <tbody id="reportsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ Modal: student review ============ -->
+<div class="modal-backdrop" id="reviewModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2 id="reviewStudentName">Student</h2><div class="meta" id="reviewExamMeta"></div></div>
+      <button id="closeReview" type="button">✕</button>
+    </div>
+    <div class="modal-body" id="reviewBody"></div>
+  </div>
+</div>
+
+<!-- ============ Modal: final report ============ -->
+<div class="modal-backdrop" id="reportModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2 id="reportStudentName">Report</h2><div class="meta" id="reportExamMeta"></div></div>
+      <button id="closeReport" type="button">✕</button>
+    </div>
+    <div class="modal-body" id="reportBody"></div>
+  </div>
+</div>
+
+<!-- ============ Modal: attach answer sheet ============ -->
+<div class="modal-backdrop" id="attachModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <div><h2 id="attachStudentName">Answer sheet</h2><div class="meta">Stored for this session — feeds the grading APIs once they're wired in.</div></div>
+      <button id="closeAttach" type="button">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-gap">
+        <label for="attachFile">Upload a .txt answer sheet</label>
+        <input type="file" id="attachFile" accept=".txt,text/plain">
+      </div>
+      <div class="field-gap">
+        <label for="attachText">Or paste the answer text directly</label>
+        <textarea id="attachText" style="min-height:160px;" placeholder="Paste the student's digitized answers here…"></textarea>
+      </div>
+      <p class="attach-status" id="attachStatus"></p>
+      <div class="btn-row">
+        <button id="saveAttachBtn" type="button">Save answer sheet</button>
+        <button class="ghost" id="clearAttachBtn" type="button">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+const MODEL_NAMES = ["ChatGPT", "Gemini", "Claude", "Llama"];
+let qCounter = 0;
+let studentCounter = 0;
+
+let draftExam = {
+  name: "AP Chemistry — Unit 4 Test",
+  threshold: 5,
+  questions: [
+    { id: "q" + (++qCounter), label: "Q1 — Periodic trends (MCQ block)", max: 10 },
+    { id: "q" + (++qCounter), label: "Q2 — Balancing equations (fill-in)", max: 10 },
+    { id: "q" + (++qCounter), label: "Q3 — Stoichiometry FRQ", max: 20 },
+    { id: "q" + (++qCounter), label: "Q4 — Lab analysis FRQ", max: 15 }
+  ]
+};
+let roster = ["Ava Thompson", "Marcus Lee", "Priya Nair"];
+
+let appliedExam = null;   // locked config once "Apply" is clicked
+let students = [];        // [{id, name, status, perQuestion:[...], sentAt, answerSheetText, answerSheetFileName}]
+let manualOverrideOpen = new Set();
+
+// ============================================================
+// Utilities
+// ============================================================
+const $ = id => document.getElementById(id);
+function round1(n) { return Math.round(n * 10) / 10; }
+function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+function escapeAttr(s) { return String(s).replace(/"/g, "&quot;"); }
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._h);
+  toast._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+// ============================================================
+// Tab navigation
+// ============================================================
+document.querySelectorAll("#tabNav button").forEach(btn => {
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
+function switchTab(name) {
+  document.querySelectorAll("#tabNav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll(".tabpanel").forEach(p => p.classList.remove("active"));
+  $("tab-" + name).classList.add("active");
+  if (name === "queue") renderQueue();
+  if (name === "reports") renderReports();
+}
+
+// ============================================================
+// Setup tab — question builder
+// ============================================================
+function renderQBuilder() {
+  const box = $("qbuilder");
+  box.innerHTML = "";
+  draftExam.questions.forEach(q => {
+    const row = document.createElement("div");
+    row.className = "qrow";
+    row.innerHTML =
+      '<input type="text" value="' + escapeAttr(q.label) + '" data-qid="' + q.id + '" data-field="label">' +
+      '<input type="number" min="1" step="0.5" value="' + q.max + '" data-qid="' + q.id + '" data-field="max">' +
+      '<button class="rm" type="button" data-qid="' + q.id + '">×</button>';
+    box.appendChild(row);
+  });
+  box.querySelectorAll('input[data-field="label"]').forEach(i =>
+    i.addEventListener("input", e => {
+      const q = draftExam.questions.find(x => x.id === e.target.dataset.qid);
+      if (q) q.label = e.target.value;
+    })
+  );
+  box.querySelectorAll('input[data-field="max"]').forEach(i =>
+    i.addEventListener("input", e => {
+      const q = draftExam.questions.find(x => x.id === e.target.dataset.qid);
+      if (q) q.max = Math.max(0.5, parseFloat(e.target.value) || 0);
+      updateQTotal();
+    })
+  );
+  box.querySelectorAll(".rm").forEach(b =>
+    b.addEventListener("click", e => {
+      draftExam.questions = draftExam.questions.filter(x => x.id !== e.target.dataset.qid);
+      renderQBuilder();
+      updateQTotal();
+    })
+  );
+  updateQTotal();
+}
+function updateQTotal() {
+  const total = draftExam.questions.reduce((a, q) => a + (q.max || 0), 0);
+  $("qtotalLine").textContent = draftExam.questions.length + " question" + (draftExam.questions.length === 1 ? "" : "s") + " · " + round1(total) + " points total";
+}
+
+$("addQBtn").addEventListener("click", () => {
+  qCounter++;
+  draftExam.questions.push({ id: "q" + qCounter, label: "Q" + draftExam.questions.length + 1, max: 10 });
+  renderQBuilder();
+});
+
+// threshold slider + policy text
+function policyUpdate() {
+  const th = parseFloat($("threshold").value);
+  draftExam.threshold = th;
+  $("thresholdVal").textContent = th.toFixed(1) + "%";
+  $("policyText").innerHTML =
+    "<strong>Current policy:</strong> for every question, the four models must agree within <strong>" +
+    th.toFixed(1) + "%</strong> of that question's max points. Wider spreads are sent to the flagged question list for teacher review.";
+  if (appliedExam) {
+    appliedExam.threshold = th; // live re-flagging across the whole class
+    renderQueue();
+    renderReports();
+  }
+}
+$("threshold").addEventListener("input", policyUpdate);
+$("examName").addEventListener("input", e => { draftExam.name = e.target.value; if (appliedExam) appliedExam.name = e.target.value; });
+
+// roster chips
+function renderRoster() {
+  const box = $("rosterChips");
+  box.innerHTML = "";
+  if (roster.length === 0) {
+    box.innerHTML = '<span class="hint">No students yet — add at least one to start.</span>';
+  }
+  roster.forEach((name, i) => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.innerHTML = name + ' <button type="button" data-i="' + i + '">×</button>';
+    box.appendChild(chip);
+  });
+  box.querySelectorAll("button").forEach(b =>
+    b.addEventListener("click", e => {
+      roster.splice(parseInt(e.target.dataset.i), 1);
+      renderRoster();
+    })
+  );
+}
+$("addStudentBtn").addEventListener("click", () => {
+  const v = $("newStudentName").value.trim();
+  if (!v) return;
+  roster.push(v);
+  $("newStudentName").value = "";
+  renderRoster();
+});
+$("newStudentName").addEventListener("keydown", e => { if (e.key === "Enter") $("addStudentBtn").click(); });
+
+$("bulkAddBtn").addEventListener("click", () => {
+  const lines = $("bulkRoster").value.split("\n").map(s => s.trim()).filter(Boolean);
+  if (lines.length === 0) { toast("Paste at least one name first."); return; }
+  let added = 0;
+  lines.forEach(name => { if (!roster.includes(name)) { roster.push(name); added++; } });
+  $("bulkRoster").value = "";
+  renderRoster();
+  toast("Added " + added + " student" + (added === 1 ? "" : "s") + (added !== lines.length ? " (" + (lines.length - added) + " already on roster)" : "") + ".");
+});
+
+// ============================================================
+// Apply settings -> lock config, (re)build student roster state
+// ============================================================
+$("applyBtn").addEventListener("click", () => {
+  if (draftExam.questions.length === 0) { toast("Add at least one question first."); return; }
+  if (roster.length === 0) { toast("Add at least one student first."); return; }
+
+  const structureChanged = !appliedExam ||
+    appliedExam.questions.length !== draftExam.questions.length ||
+    appliedExam.questions.some((q, i) => q.id !== draftExam.questions[i].id || q.max !== draftExam.questions[i].max);
+
+  if (structureChanged && students.length > 0) {
+    if (!confirm("Changing the question paper resets all grading progress for the class. Continue?")) return;
+  }
+
+  appliedExam = JSON.parse(JSON.stringify(draftExam));
+
+  if (structureChanged) {
+    students = roster.map(name => ({
+      id: "S" + (++studentCounter), name, status: "pending", perQuestion: null, sentAt: null,
+      answerSheetText: "", answerSheetFileName: ""
+    }));
+  } else {
+    const existingNames = students.map(s => s.name);
+    roster.forEach(name => {
+      if (!existingNames.includes(name)) {
+        students.push({ id: "S" + (++studentCounter), name, status: "pending", perQuestion: null, sentAt: null,
+          answerSheetText: "", answerSheetFileName: "" });
+      }
+    });
+    students = students.filter(s => roster.includes(s.name));
+  }
+
+  $("applyHint").textContent = "Applied to " + students.length + " student" + (students.length === 1 ? "" : "s") + ".";
+  toast("Class settings applied.");
+  switchTab("queue");
+});
+
+// ============================================================
+// Grading engine (mock — real API wiring comes later)
+// ============================================================
+function makeQuestionState(maxPoints, flagChance) {
+  const trueScore = (0.55 + Math.random() * 0.4) * maxPoints;
+  let scores = [0, 1, 2, 3].map(() => {
+    const jitter = (Math.random() - 0.5) * maxPoints * 0.06;
+    return trueScore + jitter;
+  });
+  if (Math.random() < flagChance) {
+    const idx = Math.floor(Math.random() * 4);
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    scores[idx] += dir * maxPoints * (0.12 + Math.random() * 0.18);
+  }
+  scores = scores.map(s => Math.min(maxPoints, Math.max(0, round1(s))));
+  const variance = ((Math.max(...scores) - Math.min(...scores)) / maxPoints) * 100;
+  const autoAverage = scores.reduce((a, b) => a + b, 0) / scores.length;
+  return { scores, variance: round1(variance), autoAverage: round1(autoAverage), resolved: false, teacherScore: null, explanation: "" };
+}
+function isFlagged(qState, threshold) { return qState.variance > threshold; }
+function finalScoreFor(qState, threshold) {
+  if (qState.resolved) return qState.teacherScore;
+  if (isFlagged(qState, threshold)) return null;
+  return qState.autoAverage;
+}
+function totalFinalFor(student) {
+  let sum = 0;
+  for (const q of student.perQuestion) {
+    const f = finalScoreFor(q, appliedExam.threshold);
+    if (f === null) return null;
+    sum += f;
+  }
+  return round1(sum);
+}
+function flaggedList(student) {
+  return student.perQuestion.filter(q => isFlagged(q, appliedExam.threshold) && !q.resolved);
+}
+function resolvedFlagCount(student) {
+  return student.perQuestion.filter(q => isFlagged(q, appliedExam.threshold) && q.resolved).length;
+}
+
+function gradeStudent(student) {
+  student.perQuestion = appliedExam.questions.map(q =>
+    Object.assign({ qid: q.id, label: q.label, max: q.max }, makeQuestionState(q.max, 0.35))
+  );
+  student.status = "graded";
+}
+
+// ============================================================
+// Grading Queue rendering
+// ============================================================
+function studentDerivedStatus(student) {
+  if (student.status === "pending") return { key: "pending", label: "Not graded" };
+  if (student.sentAt) return { key: "sent", label: "Report sent" };
+  const flagged = flaggedList(student);
+  if (flagged.length > 0) return { key: "review", label: flagged.length + " flagged — needs review" };
+  return { key: "ready", label: "Ready to send" };
+}
+
+function renderStatBar() {
+  const bar = $("statBar");
+  const total = students.length;
+  const graded = students.filter(s => s.status === "graded").length;
+  const needsReview = students.filter(s => s.status === "graded" && flaggedList(s).length > 0).length;
+  const sent = students.filter(s => s.sentAt).length;
+  bar.innerHTML = [
+    ["Students", total], ["Graded", graded], ["Needs review", needsReview], ["Reports sent", sent]
+  ].map(([l, n]) => '<div class="stat"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>').join("");
+}
+
+function renderQueue() {
+  if (!appliedExam) {
+    $("queueExamName").textContent = "No exam applied yet";
+    $("queuePolicyLine").textContent = "Go to Class setup, configure your questions and variance threshold, then apply.";
+    $("queueBody").innerHTML = '<tr><td colspan="6" class="empty">Nothing to grade yet.</td></tr>';
+    $("statBar").innerHTML = "";
+    return;
+  }
+  renderStatBar();
+  $("queueExamName").textContent = appliedExam.name;
+  $("queuePolicyLine").textContent = appliedExam.questions.length + " questions · " +
+    round1(appliedExam.questions.reduce((a, q) => a + q.max, 0)) + " points total · " +
+    appliedExam.threshold.toFixed(1) + "% allowed variance per question";
+
+  const body = $("queueBody");
+  body.innerHTML = "";
+  if (students.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">No students on the roster.</td></tr>';
+    return;
+  }
+
+  const searchTerm = ($("queueSearch").value || "").trim().toLowerCase();
+  const filterKey = $("queueFilter").value;
+  const maxTotal = round1(appliedExam.questions.reduce((a, q) => a + q.max, 0));
+
+  const visible = students.filter(s => {
+    if (searchTerm && !s.name.toLowerCase().includes(searchTerm)) return false;
+    if (filterKey !== "all" && studentDerivedStatus(s).key !== filterKey) return false;
+    return true;
+  });
+
+  if (visible.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">No students match this search/filter.</td></tr>';
+    return;
+  }
+
+  visible.forEach(s => {
+    const tr = document.createElement("tr");
+    const st = studentDerivedStatus(s);
+    const pillClass = { pending: "gray", review: "warn", ready: "ready", sent: "sent" }[st.key];
+    let totalCell = "—";
+    if (s.status === "graded") {
+      const t = totalFinalFor(s);
+      totalCell = t === null ? "pending review" : t + " / " + maxTotal;
+    }
+    let flagCell = "—";
+    if (s.status === "graded") {
+      const openCount = flaggedList(s).length;
+      const resolvedCount = resolvedFlagCount(s);
+      flagCell = openCount > 0 ? openCount + " open" + (resolvedCount ? " · " + resolvedCount + " resolved" : "") : (resolvedCount ? resolvedCount + " resolved" : "0");
+    }
+    let actionBtn = "";
+    if (s.status === "pending") {
+      actionBtn = '<button class="secondary run-grade" data-id="' + s.id + '" type="button">Run 4-model grading</button>';
+    } else if (st.key === "sent") {
+      actionBtn = '<button class="ghost view-report" data-id="' + s.id + '" type="button">View report</button>';
+    } else {
+      actionBtn = '<button class="secondary review-btn" data-id="' + s.id + '" type="button">Review</button>';
+    }
+    const sheetCell = s.answerSheetText ? '<span class="pill ok">Attached</span>' : '<span class="pill gray">None</span>';
+    tr.innerHTML =
+      "<td>" + s.name + "</td>" +
+      "<td>" + sheetCell + ' <button class="ghost attach-btn" data-id="' + s.id + '" type="button" style="padding:4px 8px; font-size:11.5px;">' + (s.answerSheetText ? "Edit" : "Attach") + "</button></td>" +
+      '<td><span class="pill ' + pillClass + '">' + st.label + "</span></td>" +
+      "<td>" + flagCell + "</td>" +
+      '<td class="num">' + totalCell + "</td>" +
+      '<td class="row-actions">' + actionBtn + "</td>";
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll(".run-grade").forEach(b => b.addEventListener("click", e => {
+    const s = students.find(x => x.id === e.target.dataset.id);
+    gradeStudent(s);
+    renderQueue();
+    toast(s.name + " graded by all four models.");
+  }));
+  body.querySelectorAll(".review-btn").forEach(b => b.addEventListener("click", e => openReview(e.target.dataset.id)));
+  body.querySelectorAll(".view-report").forEach(b => b.addEventListener("click", e => openReport(e.target.dataset.id)));
+  body.querySelectorAll(".attach-btn").forEach(b => b.addEventListener("click", e => openAttach(e.target.dataset.id)));
+}
+
+$("queueSearch").addEventListener("input", renderQueue);
+$("queueFilter").addEventListener("change", renderQueue);
+
+$("gradeAllBtn").addEventListener("click", () => {
+  if (!appliedExam) { toast("Apply class settings first."); return; }
+  const pending = students.filter(s => s.status === "pending");
+  if (pending.length === 0) { toast("Nothing pending — everyone has been graded."); return; }
+  pending.forEach(gradeStudent);
+  renderQueue();
+  toast("Graded " + pending.length + " student" + (pending.length === 1 ? "" : "s") + ".");
+});
+
+$("sendAllReadyBtn").addEventListener("click", () => {
+  if (!appliedExam) { toast("Apply class settings first."); return; }
+  const ready = students.filter(s => s.status === "graded" && !s.sentAt && totalFinalFor(s) !== null);
+  if (ready.length === 0) { toast("No reports are ready to send yet."); return; }
+  ready.forEach(s => { s.sentAt = new Date(); });
+  renderQueue();
+  renderReports();
+  toast("Sent " + ready.length + " report" + (ready.length === 1 ? "" : "s") + ".");
+});
+
+// ============================================================
+// Attach answer sheet modal (no OCR yet — plain text in/out)
+// ============================================================
+let currentAttachId = null;
+function openAttach(id) {
+  currentAttachId = id;
+  const s = students.find(x => x.id === id);
+  $("attachStudentName").textContent = s.name + " — answer sheet";
+  $("attachText").value = s.answerSheetText || "";
+  $("attachFile").value = "";
+  $("attachStatus").textContent = s.answerSheetFileName ? "Currently attached: " + s.answerSheetFileName : (s.answerSheetText ? "Currently attached: pasted text" : "Nothing attached yet.");
+  $("attachModal").classList.add("open");
+}
+$("closeAttach").addEventListener("click", () => $("attachModal").classList.remove("open"));
+$("attachFile").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    $("attachText").value = ev.target.result;
+    $("attachStatus").textContent = "Loaded from file: " + file.name + " (click Save to keep it)";
+  };
+  reader.readAsText(file);
+});
+$("saveAttachBtn").addEventListener("click", () => {
+  const s = students.find(x => x.id === currentAttachId);
+  if (!s) return;
+  const file = $("attachFile").files[0];
+  s.answerSheetText = $("attachText").value;
+  s.answerSheetFileName = file ? file.name : (s.answerSheetFileName || "");
+  if (!s.answerSheetText) s.answerSheetFileName = "";
+  $("attachModal").classList.remove("open");
+  renderQueue();
+  toast("Answer sheet saved for " + s.name + ".");
+});
+$("clearAttachBtn").addEventListener("click", () => {
+  const s = students.find(x => x.id === currentAttachId);
+  if (!s) return;
+  s.answerSheetText = "";
+  s.answerSheetFileName = "";
+  $("attachText").value = "";
+  $("attachFile").value = "";
+  $("attachStatus").textContent = "Nothing attached yet.";
+  renderQueue();
+  toast("Cleared answer sheet for " + s.name + ".");
+});
+$("attachModal").addEventListener("click", e => { if (e.target === $("attachModal")) $("attachModal").classList.remove("open"); });
+
+// ============================================================
+// Review modal — per-question breakdown + flagged question list
+// ============================================================
+function openReview(id) {
+  manualOverrideOpen.clear();
+  const s = students.find(x => x.id === id);
+  $("reviewStudentName").textContent = s.name;
+  $("reviewExamMeta").textContent = appliedExam.name + " · " + appliedExam.threshold.toFixed(1) + "% allowed variance per question";
+  renderReviewBody(s);
+  $("reviewModal").classList.add("open");
+}
+$("closeReview").addEventListener("click", () => $("reviewModal").classList.remove("open"));
+
+function renderReviewBody(s) {
+  const th = appliedExam.threshold;
+  const flagged = flaggedList(s);
+  const resolvedFlags = s.perQuestion.filter(q => q.resolved && !q.manualOverride);
+  const totalFlagged = flagged.length + resolvedFlags.length;
+  const resolvedCount = resolvedFlags.length;
+  const canSend = totalFinalFor(s) !== null;
+
+  let html = "";
+
+  html += '<h3 style="font-size:15px; margin-bottom:10px;">All questions</h3>';
+  html += '<table class="qdetail-table"><thead><tr><th>Question</th><th>Max</th><th>Model scores</th><th>Variance</th><th>Status</th></tr></thead><tbody>';
+  s.perQuestion.forEach(q => {
+    const flag = isFlagged(q, th) && !q.resolved;
+    const scoresHtml = q.scores.map((v, i) => '<span class="score-chip">' + MODEL_NAMES[i][0] + ": " + v.toFixed(1) + "</span>").join(" ");
+    let statusHtml;
+    if (q.resolved && q.manualOverride) statusHtml = '<span class="pill ok">Manually overridden</span>';
+    else if (q.resolved) statusHtml = '<span class="pill ok">Teacher-reviewed</span>';
+    else if (flag) statusHtml = '<span class="pill warn">Flagged</span>';
+    else statusHtml = '<span class="pill ok">Auto-approved</span>';
+    html += "<tr><td>" + q.label + '</td><td class="num">' + q.max + "</td><td>" + scoresHtml + '</td><td class="num">' + q.variance.toFixed(2) + "%</td><td>" + statusHtml + "</td></tr>";
+  });
+  html += "</tbody></table>";
+
+  html += '<h3 style="font-size:15px; margin:20px 0 10px;">Flagged questions</h3>';
+  if (totalFlagged === 0) {
+    html += '<p class="hint">No questions on this paper exceeded the variance threshold — nothing blocking the report.</p>';
+  } else {
+    s.perQuestion.forEach(q => {
+      const flag = isFlagged(q, th);
+      const showHere = (flag && !q.resolved) || (q.resolved && !q.manualOverride && (flag || resolvedFlags.includes(q)));
+      if (!showHere) return;
+      const cardClass = q.resolved ? "flag-card resolved" : "flag-card";
+      html += '<div class="' + cardClass + '" data-qid="' + q.qid + '">';
+      html += "<h4>" + q.label + " · max " + q.max + "</h4>";
+      html += '<div class="scores-line">' + q.scores.map((v, i) => MODEL_NAMES[i] + ": " + v.toFixed(1)).join("  ·  ") + "  —  variance " + q.variance.toFixed(2) + "%</div>";
+      if (q.resolved) {
+        html += '<div class="resolved-note"><strong>Final score: ' + q.teacherScore.toFixed(1) + " / " + q.max + '.</strong> ' + (q.explanation ? escapeHtml(q.explanation) : "No explanation entered.") + '</div>';
+        html += '<div class="btn-row" style="margin-top:8px;"><button class="ghost edit-resolve" data-qid="' + q.qid + '" type="button">Edit</button></div>';
+      } else {
+        html += '<div class="resolve-row">';
+        html += '<div><label>Final score</label><input type="number" min="0" max="' + q.max + '" step="0.5" class="teacher-score" data-qid="' + q.qid + '"></div>';
+        html += '<div><label>Explanation for report</label><input type="text" class="teacher-explain" data-qid="' + q.qid + '" placeholder="Why this score — shown in the student report"></div>';
+        html += '<div><button class="resolve-btn" data-qid="' + q.qid + '" type="button">Resolve</button></div>';
+        html += "</div>";
+      }
+      html += "</div>";
+    });
+  }
+
+  const pct = totalFlagged === 0 ? 100 : Math.round((resolvedCount / totalFlagged) * 100);
+  html += '<div class="progress-line"><span>' + resolvedCount + " of " + totalFlagged + ' flagged questions resolved</span><div class="progress-bar"><div style="width:' + pct + '%"></div></div><span>' + pct + '%</span></div>';
+
+  if (!canSend) {
+    html += '<p class="gate-note">The full report is locked until every flagged question above has a final score.</p>';
+  }
+
+  html += '<h3 style="font-size:15px; margin:20px 0 10px;">Override a clean question</h3>';
+  html += '<p class="hint" style="margin-bottom:8px;">Not blocking, and optional — use this if a question looks auto-approved but you disagree with the model consensus.</p>';
+  const overridable = s.perQuestion.filter(q => !isFlagged(q, th) && !q.resolved);
+  const openManual = s.perQuestion.filter(q => manualOverrideOpen.has(q.qid) && !q.resolved);
+  openManual.forEach(q => {
+    html += '<div class="flag-card" data-qid="' + q.qid + '">';
+    html += "<h4>" + q.label + " · max " + q.max + "</h4>";
+    html += '<div class="scores-line">' + q.scores.map((v, i) => MODEL_NAMES[i] + ": " + v.toFixed(1)).join("  ·  ") + "  —  variance " + q.variance.toFixed(2) + "% (within threshold)</div>";
+    html += '<div class="resolve-row">';
+    html += '<div><label>Final score</label><input type="number" min="0" max="' + q.max + '" step="0.5" class="teacher-score-manual" data-qid="' + q.qid + '" value="' + q.autoAverage.toFixed(1) + '"></div>';
+    html += '<div><label>Explanation for report</label><input type="text" class="teacher-explain-manual" data-qid="' + q.qid + '" placeholder="Why you changed a clean score"></div>';
+    html += '<div><button class="resolve-manual-btn" data-qid="' + q.qid + '" type="button">Save override</button></div>';
+    html += "</div></div>";
+  });
+  const resolvedManual = s.perQuestion.filter(q => q.resolved && q.manualOverride);
+  resolvedManual.forEach(q => {
+    html += '<div class="flag-card resolved" data-qid="' + q.qid + '">';
+    html += "<h4>" + q.label + " · max " + q.max + "</h4>";
+    html += '<div class="resolved-note"><strong>Final score: ' + q.teacherScore.toFixed(1) + " / " + q.max + '.</strong> ' + (q.explanation ? escapeHtml(q.explanation) : "No explanation entered.") + '</div>';
+    html += '<div class="btn-row" style="margin-top:8px;"><button class="ghost edit-manual" data-qid="' + q.qid + '" type="button">Edit</button></div>';
+    html += "</div>";
+  });
+  const pickable = overridable.filter(q => !manualOverrideOpen.has(q.qid));
+  if (pickable.length > 0) {
+    html += '<div class="override-picker"><select id="overridePick">' +
+      pickable.map(q => '<option value="' + q.qid + '">' + escapeHtml(q.label) + "</option>").join("") +
+      '</select><button class="secondary" id="openOverrideBtn" type="button">Open for override</button></div>';
+  } else if (openManual.length === 0 && resolvedManual.length === 0) {
+    html += '<p class="hint">Every question is either flagged already or has no clean questions left to override.</p>';
+  }
+
+  html += '<div class="btn-row" style="margin-top:18px;"><button id="sendFromReview" ' + (canSend ? "" : "disabled") + ' type="button">Generate &amp; send report</button></div>';
+
+  $("reviewBody").innerHTML = html;
+
+  $("reviewBody").querySelectorAll(".resolve-btn").forEach(b => b.addEventListener("click", e => {
+    const qid = e.target.dataset.qid;
+    const scoreInput = $("reviewBody").querySelector('.teacher-score[data-qid="' + qid + '"]');
+    const explainInput = $("reviewBody").querySelector('.teacher-explain[data-qid="' + qid + '"]');
+    const val = parseFloat(scoreInput.value);
+    const q = s.perQuestion.find(x => x.qid === qid);
+    if (!isFinite(val) || val < 0 || val > q.max) { toast("Enter a score between 0 and " + q.max + "."); return; }
+    q.resolved = true;
+    q.manualOverride = false;
+    q.teacherScore = round1(val);
+    q.explanation = explainInput.value.trim();
+    renderReviewBody(s);
+    renderQueue();
+  }));
+  $("reviewBody").querySelectorAll(".edit-resolve").forEach(b => b.addEventListener("click", e => {
+    const qid = e.target.dataset.qid;
+    const q = s.perQuestion.find(x => x.qid === qid);
+    q.resolved = false;
+    renderReviewBody(s);
+    renderQueue();
+  }));
+  $("reviewBody").querySelectorAll(".resolve-manual-btn").forEach(b => b.addEventListener("click", e => {
+    const qid = e.target.dataset.qid;
+    const scoreInput = $("reviewBody").querySelector('.teacher-score-manual[data-qid="' + qid + '"]');
+    const explainInput = $("reviewBody").querySelector('.teacher-explain-manual[data-qid="' + qid + '"]');
+    const val = parseFloat(scoreInput.value);
+    const q = s.perQuestion.find(x => x.qid === qid);
+    if (!isFinite(val) || val < 0 || val > q.max) { toast("Enter a score between 0 and " + q.max + "."); return; }
+    q.resolved = true;
+    q.manualOverride = true;
+    q.teacherScore = round1(val);
+    q.explanation = explainInput.value.trim();
+    manualOverrideOpen.delete(qid);
+    renderReviewBody(s);
+    renderQueue();
+  }));
+  $("reviewBody").querySelectorAll(".edit-manual").forEach(b => b.addEventListener("click", e => {
+    const qid = e.target.dataset.qid;
+    const q = s.perQuestion.find(x => x.qid === qid);
+    q.resolved = false;
+    manualOverrideOpen.add(qid);
+    renderReviewBody(s);
+    renderQueue();
+  }));
+  const openOverrideBtn = $("openOverrideBtn");
+  if (openOverrideBtn) openOverrideBtn.addEventListener("click", () => {
+    const qid = $("overridePick").value;
+    manualOverrideOpen.add(qid);
+    renderReviewBody(s);
+  });
+  const sendBtn = $("sendFromReview");
+  if (sendBtn) sendBtn.addEventListener("click", () => { sendReport(s.id); $("reviewModal").classList.remove("open"); });
+}
+
+// ============================================================
+// Sending a report
+// ============================================================
+function sendReport(id) {
+  const s = students.find(x => x.id === id);
+  const total = totalFinalFor(s);
+  if (total === null) { toast("Resolve every flagged question first."); return; }
+  s.sentAt = new Date();
+  renderQueue();
+  renderReports();
+  toast("Report sent for " + s.name + ".");
+}
+
+// ============================================================
+// Reports tab
+// ============================================================
+function renderReports() {
+  const body = $("reportsBody");
+  body.innerHTML = "";
+  if (!appliedExam || students.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">No students graded yet.</td></tr>';
+    return;
+  }
+  const graded = students.filter(s => s.status === "graded");
+  if (graded.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">Run grading from the Grading queue tab first.</td></tr>';
+    return;
+  }
+  const searchTerm = ($("reportsSearch").value || "").trim().toLowerCase();
+  const visible = searchTerm ? graded.filter(s => s.name.toLowerCase().includes(searchTerm)) : graded;
+  if (visible.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">No students match this search.</td></tr>';
+    return;
+  }
+  const maxTotal = round1(appliedExam.questions.reduce((a, q) => a + q.max, 0));
+  visible.forEach(s => {
+    const total = totalFinalFor(s);
+    const tr = document.createElement("tr");
+    const statusHtml = s.sentAt ? '<span class="pill sent">Sent</span>' : (total !== null ? '<span class="pill ready">Ready to send</span>' : '<span class="pill warn">Awaiting review</span>');
+    tr.innerHTML =
+      "<td>" + s.name + "</td>" +
+      '<td class="num">' + (total === null ? "—" : total + " / " + maxTotal) + "</td>" +
+      '<td class="num">' + (total === null ? "—" : Math.round(total / maxTotal * 100) + "%") + "</td>" +
+      "<td>" + statusHtml + "</td>" +
+      "<td>" + (s.sentAt ? s.sentAt.toLocaleString() : "—") + "</td>" +
+      '<td class="row-actions">' +
+        (total !== null ? '<button class="ghost view-report" data-id="' + s.id + '" type="button">' + (s.sentAt ? "View report" : "Preview &amp; send") + "</button>" : '<button class="secondary review-btn" data-id="' + s.id + '" type="button">Review flags</button>') +
+      "</td>";
+    body.appendChild(tr);
+  });
+  body.querySelectorAll(".view-report").forEach(b => b.addEventListener("click", e => openReport(e.target.dataset.id)));
+  body.querySelectorAll(".review-btn").forEach(b => b.addEventListener("click", e => openReview(e.target.dataset.id)));
+}
+$("reportsSearch").addEventListener("input", renderReports);
+
+function openReport(id) {
+  const s = students.find(x => x.id === id);
+  const total = totalFinalFor(s);
+  if (total === null) { openReview(id); return; }
+  const maxTotal = round1(appliedExam.questions.reduce((a, q) => a + q.max, 0));
+  $("reportStudentName").textContent = s.name;
+  $("reportExamMeta").textContent = appliedExam.name + (s.sentAt ? " · sent " + s.sentAt.toLocaleString() : " · not yet sent");
+
+  let html = '<div class="report-total"><div class="big">' + total + '</div><div class="of">/ ' + maxTotal + " points  (" + Math.round(total / maxTotal * 100) + "%)</div></div>";
+  html += '<table class="qdetail-table"><thead><tr><th>Question</th><th>Max</th><th>Final score</th><th>Basis</th></tr></thead><tbody>';
+  s.perQuestion.forEach(q => {
+    const f = finalScoreFor(q, appliedExam.threshold);
+    let basis = "4-model consensus (avg)";
+    if (q.resolved) basis = q.manualOverride ? "Teacher override (was clean)" : "Teacher-reviewed (was flagged)";
+    html += "<tr><td>" + q.label + '</td><td class="num">' + q.max + '</td><td class="num"><strong>' + f.toFixed(1) + "</strong></td><td>" + basis + "</td></tr>";
+    if (q.resolved && q.explanation) {
+      html += '<tr><td colspan="4"><div class="explain-block"><strong>Teacher note:</strong> ' + escapeHtml(q.explanation) + "</div></td></tr>";
+    }
+  });
+  html += "</tbody></table>";
+
+  if (!s.sentAt) {
+    html += '<div class="btn-row" style="margin-top:18px;"><button id="sendFromReport" type="button">Send report to student</button><button class="secondary" id="downloadReportBtn" type="button">Download report (.txt)</button></div>';
+  } else {
+    html += '<p class="hint" style="margin-top:16px;">This report was sent on ' + s.sentAt.toLocaleString() + ".</p>";
+    html += '<div class="btn-row"><button class="secondary" id="downloadReportBtn" type="button">Download report (.txt)</button></div>';
+  }
+
+  $("reportBody").innerHTML = html;
+  const sendBtn = $("sendFromReport");
+  if (sendBtn) sendBtn.addEventListener("click", () => { sendReport(s.id); openReport(s.id); renderReports(); });
+  $("downloadReportBtn").addEventListener("click", () => downloadReportFile(s));
+  $("reportModal").classList.add("open");
+}
+
+function downloadReportFile(s) {
+  const total = totalFinalFor(s);
+  const maxTotal = round1(appliedExam.questions.reduce((a, q) => a + q.max, 0));
+  const lines = [];
+  lines.push("GradePilot — Student Report");
+  lines.push("Exam: " + appliedExam.name);
+  lines.push("Student: " + s.name);
+  lines.push("Status: " + (s.sentAt ? "Sent " + s.sentAt.toLocaleString() : "Not yet sent"));
+  lines.push("");
+  lines.push("Final score: " + total + " / " + maxTotal + " (" + Math.round(total / maxTotal * 100) + "%)");
+  lines.push("");
+  lines.push("Per-question breakdown:");
+  s.perQuestion.forEach(q => {
+    const f = finalScoreFor(q, appliedExam.threshold);
+    const basis = q.resolved ? (q.manualOverride ? "teacher override" : "teacher-reviewed") : "4-model consensus";
+    lines.push("- " + q.label + ": " + f.toFixed(1) + " / " + q.max + " (" + basis + ")");
+    if (q.resolved && q.explanation) lines.push("    Teacher note: " + q.explanation);
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = s.name.replace(/[^a-z0-9]+/gi, "_") + "_report.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$("closeReport").addEventListener("click", () => $("reportModal").classList.remove("open"));
+[$("reviewModal"), $("reportModal")].forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); }));
+
+// ============================================================
+// CSV export — class summary
+// ============================================================
+$("exportBtn").addEventListener("click", () => {
+  if (!appliedExam) { toast("Apply class settings first."); return; }
+  const maxTotal = round1(appliedExam.questions.reduce((a, q) => a + q.max, 0));
+  const header = "student,total_score,max_points,percent,flagged_questions,resolved_questions,status,sent_at\n";
+  const rows = students.filter(s => s.status === "graded").map(s => {
+    const total = totalFinalFor(s);
+    const flagged = flaggedList(s).length;
+    const resolved = resolvedFlagCount(s);
+    const status = s.sentAt ? "sent" : (total !== null ? "ready" : "awaiting_review");
+    return [s.name, total === null ? "" : total, maxTotal, total === null ? "" : Math.round(total / maxTotal * 100), flagged, resolved, status, s.sentAt ? s.sentAt.toISOString() : ""].join(",");
+  }).join("\n");
+  const blob = new Blob([header + rows], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "marks_table.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// ============================================================
+// Session save / load
+// ============================================================
+$("saveSessionBtn").addEventListener("click", () => {
+  const payload = {
+    savedAt: new Date().toISOString(),
+    draftExam, roster, appliedExam,
+    students: students.map(s => Object.assign({}, s, { sentAt: s.sentAt ? s.sentAt.toISOString() : null }))
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "gradepilot-session.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  $("sessionHint").textContent = "Session saved " + new Date().toLocaleString() + ".";
+  toast("Session file downloaded.");
+});
+
+$("loadSessionBtn").addEventListener("click", () => $("loadSessionInput").click());
+$("loadSessionInput").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const payload = JSON.parse(ev.target.result);
+      draftExam = payload.draftExam;
+      roster = payload.roster;
+      appliedExam = payload.appliedExam;
+      students = (payload.students || []).map(s => Object.assign({}, s, { sentAt: s.sentAt ? new Date(s.sentAt) : null }));
+      qCounter = Math.max(0, ...draftExam.questions.map(q => parseInt((q.id || "q0").replace("q", "")) || 0));
+      studentCounter = Math.max(0, ...students.map(s => parseInt((s.id || "S0").replace("S", "")) || 0));
+      renderQBuilder();
+      renderRoster();
+      $("examName").value = draftExam.name;
+      $("threshold").value = draftExam.threshold;
+      policyUpdate();
+      renderQueue();
+      renderReports();
+      $("sessionHint").textContent = "Loaded session saved " + (payload.savedAt ? new Date(payload.savedAt).toLocaleString() : "previously") + ".";
+      toast("Session loaded.");
+    } catch (err) {
+      toast("Couldn't read that file — is it a GradePilot session export?");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+$("newExamBtn").addEventListener("click", () => {
+  if (!confirm("Start a new exam? This clears the current exam's grading progress. Your roster is kept.")) return;
+  appliedExam = null;
+  students = students.map(s => ({ id: s.id, name: s.name, status: "pending", perQuestion: null, sentAt: null, answerSheetText: "", answerSheetFileName: "" }));
+  renderQueue();
+  renderReports();
+  $("applyHint").textContent = "";
+  $("sessionHint").textContent = "Started a new exam — apply class settings to begin grading again.";
+  switchTab("setup");
+  toast("Ready for a new exam.");
+});
+
+// ============================================================
+// Init
+// ============================================================
+renderQBuilder();
+renderRoster();
+policyUpdate();
+renderQueue();
+renderReports();
+</script>
+</body>
+</html>
